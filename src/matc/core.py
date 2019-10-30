@@ -32,3 +32,24 @@ class CovariatesNode:
         vec = mat.reshape(mat.size)
         self.alpha = np.linalg.solve(self.covs_mat.T.dot(self.covs_mat),
                                      self.covs_mat.T.dot(vec))
+
+
+class DataNode:
+    def __init__(self, mask, data, sigma):
+        assert sigma > 0.0
+        assert isinstance(mask, utils.Mask)
+        assert isinstance(data, np.ndarray)
+        assert mask.size == data.size
+        self.mask = mask
+        self.data = data
+        self.shape = self.mask.shape
+
+        self.weight_mat = self.mask.inv(np.repeat(1.0/sigma**2, self.mask.size))
+
+    @property
+    def predict_mat(self):
+        return self.mask.inv(self.data)
+
+    def update_params(self, mat):
+        assert mat.shape == self.shape
+        pass
