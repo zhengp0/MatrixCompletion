@@ -52,3 +52,20 @@ def test_core_data_node(mask, data, sigma):
     assert np.linalg.norm(data_node.weight_mat -
                           np.diag(np.repeat(1.0/sigma**2, 3))) < 1e-10
     assert np.linalg.norm(data_node.predict_mat - np.diag(data)) < 1e-10
+
+
+@pytest.mark.parametrize("shape", [(5, 4)])
+@pytest.mark.parametrize("rank", [2])
+@pytest.mark.parametrize("sigma", [1.0, 0.1])
+def test_core_low_rank_node(shape, rank, sigma):
+    low_rank_node = core.LowRankNode(shape, rank, sigma)
+    predict_mat = low_rank_node.predict_mat
+    assert predict_mat.shape == shape
+    assert np.linalg.norm(predict_mat -
+                          low_rank_node.u.dot(low_rank_node.v.T)) < 1e-10
+
+    mat = np.random.randn(*shape)
+    low_rank_node.update_params(mat)
+    a, s, b = np.linalg.svd(mat)
+    mat_approx = (a[:, :rank]*s[:rank]).dot(b[:rank])
+    assert np.linalg.norm(low_rank_node.predict_mat - mat_approx) < 1e-10
