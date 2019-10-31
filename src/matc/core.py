@@ -83,3 +83,53 @@ class LowRankNode:
         a, s, b = np.linalg.svd(mat, full_matrices=False)
         self.u = a[:, :self.rank]*s[:self.rank]
         self.v = b.T[:, :self.rank]
+
+
+class MatrixCompletion:
+    def __init__(self, nodes):
+        assert isinstance(nodes, list)
+        assert len(nodes) != 0
+        self.nodes = nodes
+        self.num_nodes = len(self.nodes)
+        self.shape = self.nodes[0].shape
+        self.mat = np.zeros(self.shape)
+
+    def objective(self):
+        val = 0.0
+        for node in self.nodes:
+            val += 0.5*np.sum(node.weight_mat*(node.predict_mat - self.mat)**2)
+        return val
+
+    def update_mat(self):
+        weight_mats = np.array([node.weight_mat for node in self.nodes])
+        predict_mats = np.array([node.predict_mat for node in self.nodes])
+
+        self.mat = np.sum(weight_mats*predict_mats, axis=0) /\
+            np.sum(weight_mats, axis=0)
+
+    def complete_matrix(self,
+                        verbose=False,
+                        max_iter=100,
+                        tol=1e-6):
+        iter_count = 0
+        err = tol + 1
+        mat_old = self.mat.copy()
+        while err >= tol:
+            # update mat
+            self.update_mat()
+
+            # update node params
+            for node in self.nodes:
+                node.update_params()
+
+            # update iteration information
+            err = np.linalg.norm(self.mat - mat_old)/self.mat.size
+            iter_count += 1
+            if verbose:
+                obj = self.objective()
+                print("iter %5d, obj %7.2e, err %7.2e" %
+                      (iter_count, obj, err))
+
+            if iter_count >= max_iter:
+                print("Reach maximum iteration.")
+                break
