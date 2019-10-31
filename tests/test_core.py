@@ -69,3 +69,34 @@ def test_core_low_rank_node(shape, rank, sigma):
     a, s, b = np.linalg.svd(mat)
     mat_approx = (a[:, :rank]*s[:rank]).dot(b[:rank])
     assert np.linalg.norm(low_rank_node.predict_mat - mat_approx) < 1e-10
+
+
+@pytest.fixture
+def shape():
+    return 3, 3
+
+
+@pytest.fixture
+def data_node(shape):
+    index = (np.arange(3), np.arange(3))
+    mask = utils.Mask(shape, index)
+    data = np.ones(3)
+    sigma = 0.1
+    return core.DataNode(mask, data, sigma)
+
+
+@pytest.fixture
+def covs_node(shape):
+    covs = np.ones((1,) + shape)
+    sigma = 0.1
+    return core.CovariatesNode(covs, sigma)
+
+
+def test_core_matrix_completion(data_node, covs_node):
+    mc = core.MatrixCompletion([data_node, covs_node])
+    covs_node.alpha[:] = 1.0
+    objective = 0.5*(np.sum(data_node.predict_mat**2)/data_node.sigma**2 +
+                     np.sum(covs_node.predict_mat**2)/covs_node.sigma**2)
+    assert np.abs(mc.objective() - objective) < 1e-10
+    mc.update_mat()
+    assert np.linalg.norm(mc.mat - 1.0) < 1e-10
