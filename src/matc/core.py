@@ -16,9 +16,9 @@ class CovariatesNode:
         `covs`, and weights the resulting matrix by 1/sigma^2.
         
         :param covs: (np.ndarray)
-        :param sigma: (int)
+        :param sigma: (float)
         """
-        assert isinstance(sigma, int)
+        assert isinstance(sigma, float)
         assert covs.ndim == 3
         assert sigma > 0.0
         self.covs = covs
@@ -64,9 +64,9 @@ class DataNode:
 
         :param mask: (utils.Mask)
         :param data: (np.ndarray)
-        :param sigma: (int)
+        :param sigma: (float)
         """
-        assert isinstance(sigma, int)
+        assert isinstance(sigma, float)
         assert sigma > 0.0
         assert isinstance(mask, utils.Mask)
         assert isinstance(data, np.ndarray)
@@ -95,9 +95,9 @@ class LowRankNode:
         
         :param shape: (int, int)
         :param rank: (int)
-        :param sigma: (int)
+        :param sigma: (float)
         """
-        assert isinstance(sigma, int)
+        assert isinstance(sigma, float)
         assert sigma > 0.0
         assert isinstance(shape, tuple)
         assert isinstance(rank, int)
@@ -171,10 +171,11 @@ class MatrixCompletion:
 
             # update node params
             for node in self.nodes:
-                node.update_params()
+                node.update_params(self.mat)
 
             # update iteration information
             err = np.linalg.norm(self.mat - mat_old)/self.mat.size
+            np.copyto(mat_old, self.mat)
             iter_count += 1
             if verbose:
                 obj = self.objective()
